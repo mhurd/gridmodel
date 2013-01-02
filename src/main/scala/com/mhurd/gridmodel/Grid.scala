@@ -44,11 +44,53 @@ sealed case class Grid[T](width: Int, height: Int, initialCells: List[(Int, Int,
     }
   }
 
+  /*
+   Holds the map of non-empty cells
+   */
   val cellMap: Map[(Int, Int), Cell[T]] = (for {
     (x, y, content) <- initialCells
     newCell: Cell[T] = GridCell(x, y, Some(content))
     if (!newCell.isOutOfBounds)
   } yield (x, y) -> newCell).toMap
+
+  /*
+   Gets an ordered list of all the cells that make up the grid, including empty cells
+   which are constructed on the fly
+   */
+  def cellList: List[Cell[T]] = {
+    (for {
+      y <- ((0 until height) reverse)
+      x <- 0 until width
+    } yield {
+      get(x, y)
+    }).toList.sorted
+  }
+
+  def get(x: Int, y: Int): Cell[T] = {
+    cellMap.get((x, y)) match {
+      case Some(cell: GridCell) => cell
+      case None => GridCell(x, y, None)
+    }
+  }
+
+  override def toString: String = {
+    cellMap map {
+      case (key, value) => value
+    } mkString ("\n")
+  }
+
+  def ascii(): String = {
+    (for {
+      y <- ((0 until height) reverse)
+      x <- 0 until width
+    } yield {
+      val nl =
+        if (x == (width - 1)) System.lineSeparator()
+        else ""
+      if (cellMap.get(x, y).isEmpty) "o " + nl
+      else "* " + nl
+    }) mkString ("")
+  }
 
   override def equals(obj: Any) = obj match {
     case that: Grid[T] => {
@@ -75,41 +117,6 @@ sealed case class Grid[T](width: Int, height: Int, initialCells: List[(Int, Int,
           ) + width.hashCode()
         ) + height.hashCode()
     }
-  }
-
-  def get(x: Int, y: Int): Cell[T] = {
-    cellMap.get((x, y)) match {
-      case Some(cell: GridCell) => cell
-      case None => GridCell(x, y, None)
-    }
-  }
-
-  def cellList: List[Cell[T]] = {
-    (for {
-      y <- ((0 until height) reverse)
-      x <- 0 until width
-    } yield {
-      get(x, y)
-    }).toList.sorted
-  }
-
-  override def toString: String = {
-    cellMap map {
-      case (key, value) => value
-    } mkString ("\n")
-  }
-
-  def ascii(): String = {
-    (for {
-      y <- ((0 until height) reverse)
-      x <- 0 until width
-    } yield {
-      val nl =
-        if (x == (width - 1)) System.lineSeparator()
-        else ""
-      if (cellMap.get(x, y).isEmpty) "o " + nl
-      else "* " + nl
-    }) mkString ("")
   }
 
   private[gridmodel] sealed case class GridCell(x: Int, y: Int, content: Option[T]) extends Cell[T] {

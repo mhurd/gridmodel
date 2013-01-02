@@ -29,7 +29,7 @@ class GridDataAccessSpec extends FlatSpec {
       val grid = Grid[Int](3, 3, cells)
     }
 
-  "GridDataAccess" must "be able to be constructed using a list of tuples (handling out out-of-bounds cells)" in {
+  "GridDataAccess" must "be able to be constructed using a list of tuples representing the desired cells (handling out out-of-bounds cells)" in {
     val f = nonEmptyOutOfBoundsFixture
     expect(true) {
       f.grid.get(10, 10).isOutOfBounds
@@ -39,8 +39,23 @@ class GridDataAccessSpec extends FlatSpec {
     }
   }
 
-  it must "be able to be constructed using a list of tuples " in {
+  it must "be able to be constructed using a list of tuples representing the desired cells" in {
     val f = nonEmptyFixture
+    expect(5) {
+      f.grid.cellMap.size
+    }
+    expect(Some(1)) {
+      f.grid.get(0, 0).content
+    }
+    expect(Some(2)) {
+      f.grid.get(0, 1).content
+    }
+    expect(Some(3)) {
+      f.grid.get(1, 0).content
+    }
+    expect(Some(4)) {
+      f.grid.get(1, 1).content
+    }
     expect(Some(5)) {
       f.grid.get(1, 2).content
     }
