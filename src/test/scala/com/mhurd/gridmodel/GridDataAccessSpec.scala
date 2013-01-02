@@ -4,31 +4,58 @@ import org.scalatest.FlatSpec
 
 class GridDataAccessSpec extends FlatSpec {
 
-  def emptyFixture =
-    new {
-      val grid = Grid[Int](3, 3)
-    }
-
   def nonEmptyFixture =
     new {
-      val grid = Grid[Int](3, 3)
-      grid.put(0, 0, 1)
-      grid.put(0, 1, 2)
-      grid.put(1, 0, 3)
-      grid.put(1, 1, 4)
-      grid.put(1, 2, 5)
+      val cells = List(
+        (0, 0, 1),
+        (0, 1, 2),
+        (1, 0, 3),
+        (1, 1, 4),
+        (1, 2, 5)
+      )
+      val grid = Grid[Int](3, 3, cells)
     }
 
-  "GridDataAccess" must "be able to return empty cells if there is no data at a requested location" in {
-    val f = emptyFixture
+  def nonEmptyOutOfBoundsFixture =
+    new {
+      val cells = List(
+        (0, 0, 1),
+        (0, 1, 2),
+        (1, 0, 3),
+        (1, 1, 4),
+        (1, 2, 5),
+        (10, 10, 36)
+      )
+      val grid = Grid[Int](3, 3, cells)
+    }
+
+  "GridDataAccess" must "be able to be constructed using a list of tuples (handling out out-of-bounds cells)" in {
+    val f = nonEmptyOutOfBoundsFixture
+    expect(true) {
+      f.grid.get(10, 10).isOutOfBounds
+    }
     expect(None) {
-      f.grid.get(1, 1).content
+      f.grid.get(10, 10).content
     }
-    expect(1) {
-      f.grid.get(1, 1).x
+  }
+
+  it must "be able to be constructed using a list of tuples " in {
+    val f = nonEmptyFixture
+    expect(Some(5)) {
+      f.grid.get(1, 2).content
     }
-    expect(1) {
-      f.grid.get(1, 1).y
+  }
+
+  it must "be able to return empty cells if there is no data at a requested location" in {
+    val f = nonEmptyFixture
+    expect(None) {
+      f.grid.get(2, 2).content
+    }
+    expect(2) {
+      f.grid.get(2, 2).x
+    }
+    expect(2) {
+      f.grid.get(2, 2).y
     }
   }
 
@@ -49,33 +76,6 @@ class GridDataAccessSpec extends FlatSpec {
     }
   }
 
-  it must "be able to remove the cell at a requested location" in {
-    val f = nonEmptyFixture
-    f.grid.remove(1, 1)
-    expect(None) {
-      f.grid.get(1, 1).content
-    }
-  }
-
-  it must "be able to add a cell at the requested location" in {
-    val f = emptyFixture
-    f.grid.put(1, 1, 36)
-    expect(Some(36)) {
-      f.grid.get(1, 1).content
-    }
-  }
-
-  it must "be able to handle adding a cell to an out-of-bounds location (nullOp)" in {
-      val f = emptyFixture
-      f.grid.put(10, 10, 36)
-      expect(true) {
-        f.grid.get(10, 10).isOutOfBounds
-      }
-      expect(None) {
-        f.grid.get(10, 10).content
-      }
-    }
-
   it must "be able to get the raw Map of non-empty cells (immutable)" in {
     val f = nonEmptyFixture
     expect(5) {
@@ -85,12 +85,12 @@ class GridDataAccessSpec extends FlatSpec {
   }
 
   it must "be able to get the cells as a sorted list, including empty cells (immutable)" in {
-      val f = nonEmptyFixture
-      expect(9) {
-        val theCells: List[Cell[Int]] = f.grid.cellList
-        theCells.size
-      }
+    val f = nonEmptyFixture
+    expect(9) {
+      val theCells: List[Cell[Int]] = f.grid.cellList
+      theCells.size
     }
+  }
 
   it must "be able to return a string representation of itself" in {
     val f = nonEmptyFixture
@@ -149,56 +149,56 @@ class GridDataAccessSpec extends FlatSpec {
     }
   }
 
-  it must "be able to say access cells around a given cell using compass directions (north)" in {
+  it must "be able to access cells around a given cell using compass directions (north)" in {
     val f = nonEmptyFixture
     expect("(1,2) = 5") {
       f.grid.get(1, 1).north.toString
     }
   }
 
-  it must "be able to say access cells around a given cell using compass directions (northEast)" in {
+  it must "be able to access cells around a given cell using compass directions (northEast)" in {
     val f = nonEmptyFixture
     expect("(2,2) = Empty") {
       f.grid.get(1, 1).northEast.toString
     }
   }
 
-  it must "be able to say access cells around a given cell using compass directions (east)" in {
+  it must "be able to access cells around a given cell using compass directions (east)" in {
     val f = nonEmptyFixture
     expect("(2,1) = Empty") {
       f.grid.get(1, 1).east.toString
     }
   }
 
-  it must "be able to say access cells around a given cell using compass directions (southEast)" in {
+  it must "be able to access cells around a given cell using compass directions (southEast)" in {
     val f = nonEmptyFixture
     expect("(2,0) = Empty") {
       f.grid.get(1, 1).southEast.toString
     }
   }
 
-  it must "be able to say access cells around a given cell using compass directions (south)" in {
+  it must "be able to access cells around a given cell using compass directions (south)" in {
     val f = nonEmptyFixture
     expect("(1,0) = 3") {
       f.grid.get(1, 1).south.toString
     }
   }
 
-  it must "be able to say access cells around a given cell using compass directions (southWest)" in {
+  it must "be able to access cells around a given cell using compass directions (southWest)" in {
     val f = nonEmptyFixture
     expect("(0,0) = 1") {
       f.grid.get(1, 1).southWest.toString
     }
   }
 
-  it must "be able to say access cells around a given cell using compass directions (west)" in {
+  it must "be able to access cells around a given cell using compass directions (west)" in {
     val f = nonEmptyFixture
     expect("(0,1) = 2") {
       f.grid.get(1, 1).west.toString
     }
   }
 
-  it must "be able to say access cells around a given cell using compass directions (northWest)" in {
+  it must "be able to access cells around a given cell using compass directions (northWest)" in {
     val f = nonEmptyFixture
     expect("(0,2) = Empty") {
       f.grid.get(1, 1).northWest.toString

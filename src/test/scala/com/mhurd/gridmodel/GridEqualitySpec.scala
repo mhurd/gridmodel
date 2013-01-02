@@ -6,39 +6,55 @@ class GridEqualitySpec extends FlatSpec {
 
   def emptyFixture =
     new {
-      val grid1 = Grid[Int](2, 2)
-      val grid2 = Grid[Int](2, 2)
-      val grid3 = Grid[Int](2, 3)
+      val grid1 = Grid[Int](3, 3, List())
+      val grid2 = Grid[Int](3, 3, List())
+      val grid3 = Grid[Int](4, 4, List())
     }
 
   def sameContentsFixture =
     new {
-      val grid1 = Grid[Int](2, 2)
-      val grid2 = Grid[Int](2, 2)
-      val grid3 = Grid[Int](2, 3)
-      grid1.put(1, 1, 1)
-      grid2.put(1, 1, 1)
-      grid3.put(1, 1, 1)
+      val cells = List(
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1)
+      )
+      val grid1 = Grid[Int](3, 3, cells)
+      val grid2 = Grid[Int](3, 3, cells)
+      val grid3 = Grid[Int](4, 4, cells)
     }
 
   def differentContentsFixture =
     new {
-      val grid1 = Grid[Int](2, 2)
-      val grid2 = Grid[Int](2, 2)
-      val grid3 = Grid[Int](2, 3)
-      grid1.put(1, 1, 1)
-      grid2.put(1, 1, 2)
-      grid3.put(1, 1, 3)
+      val cells1 = List(
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1)
+      )
+      val cells2 = List(
+        (1, 1, 1),
+        (1, 1, 2),
+        (1, 1, 3)
+      )
+      val grid1 = Grid[Int](3, 3, cells1)
+      val grid2 = Grid[Int](3, 3, cells2)
+      val grid3 = Grid[Int](4, 4, cells2)
     }
 
   def differentLocationsFixture =
     new {
-      val grid1 = Grid[Int](2, 2)
-      val grid2 = Grid[Int](2, 2)
-      val grid3 = Grid[Int](2, 3)
-      grid1.put(1, 1, 1)
-      grid2.put(1, 2, 1)
-      grid3.put(2, 1, 1)
+      val cells1 = List(
+        (1, 1, 1),
+        (1, 1, 1),
+        (1, 1, 1)
+      )
+      val cells2 = List(
+        (1, 1, 1),
+        (1, 2, 1),
+        (2, 1, 1)
+      )
+      val grid1 = Grid[Int](3, 3, cells1)
+      val grid2 = Grid[Int](3, 3, cells2)
+      val grid3 = Grid[Int](4, 4, cells2)
     }
 
   "GridEquality" must "equal each other when empty" in {

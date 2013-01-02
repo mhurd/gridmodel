@@ -34,7 +34,7 @@ sealed trait Cell[T] {
 
 }
 
-sealed case class Grid[T](width: Int, height: Int) {
+sealed case class Grid[T](width: Int, height: Int, initialCells: List[(Int, Int, T)]) {
 
   implicit object CellOrdering extends Ordering[Cell[T]] {
     def compare(a: Cell[T], b: Cell[T]) = {
@@ -44,15 +44,17 @@ sealed case class Grid[T](width: Int, height: Int) {
     }
   }
 
-  private var cellGrid: Map[(Int, Int), Cell[T]] = Map()
-
-  def cellMap(): Map[(Int, Int), Cell[T]] = cellGrid
+  val cellMap: Map[(Int, Int), Cell[T]] = (for {
+    (x, y, content) <- initialCells
+    newCell: Cell[T] = GridCell(x, y, Some(content))
+    if (!newCell.isOutOfBounds)
+  } yield (x, y) -> newCell).toMap
 
   override def equals(obj: Any) = obj match {
     case that: Grid[T] => {
-      (this eq that) || canEqual(that) && this.cellGrid.size == that.cellGrid.size && this.width == that.width && this.height == that.height &&
-        this.cellGrid.keySet.forall(key => {
-          that.cellGrid.contains(key) && this.cellGrid.get(key) == that.cellGrid.get(key)
+      (this eq that) || canEqual(that) && this.cellMap.size == that.cellMap.size && this.width == that.width && this.height == that.height &&
+        this.cellMap.keySet.forall(key => {
+          that.cellMap.contains(key) && this.cellMap.get(key) == that.cellMap.get(key)
         })
     }
     case _ => false
@@ -61,7 +63,7 @@ sealed case class Grid[T](width: Int, height: Int) {
   override def canEqual(that: Any): Boolean = that.isInstanceOf[Grid[T]]
 
   override def hashCode(): Int = {
-    if (cellGrid.values.isEmpty) {
+    if (cellMap.values.isEmpty) {
       41 * (
         41 + width.hashCode()
         ) + height.hashCode()
@@ -69,14 +71,14 @@ sealed case class Grid[T](width: Int, height: Int) {
     else {
       41 * (
         41 * (
-          (cellGrid.values map (value => 41 + value.hashCode())).reduceLeft((sum, value) => (41 * sum) + value)
+          (cellMap.values map (value => 41 + value.hashCode())).reduceLeft((sum, value) => (41 * sum) + value)
           ) + width.hashCode()
         ) + height.hashCode()
     }
   }
 
   def get(x: Int, y: Int): Cell[T] = {
-    cellGrid.get((x, y)) match {
+    cellMap.get((x, y)) match {
       case Some(cell: GridCell) => cell
       case None => GridCell(x, y, None)
     }
@@ -91,18 +93,8 @@ sealed case class Grid[T](width: Int, height: Int) {
     }).toList.sorted
   }
 
-  def put(x: Int, y: Int, content: T): Cell[T] = {
-    val newCell = GridCell(x, y, Option(content))
-    if (!newCell.isOutOfBounds) cellGrid += ((newCell.x, newCell.y) -> newCell)
-    newCell
-  }
-
-  def remove(x: Int, y: Int) = {
-    cellGrid = cellGrid - ((x, y))
-  }
-
   override def toString: String = {
-    cellGrid map {
+    cellMap map {
       case (key, value) => value
     } mkString ("\n")
   }
@@ -115,12 +107,12 @@ sealed case class Grid[T](width: Int, height: Int) {
       val nl =
         if (x == (width - 1)) System.lineSeparator()
         else ""
-      if (cellGrid.get(x, y).isEmpty) "o " + nl
+      if (cellMap.get(x, y).isEmpty) "o " + nl
       else "* " + nl
     }) mkString ("")
   }
 
-  private sealed case class GridCell(x: Int, y: Int, content: Option[T]) extends Cell[T] {
+  private[gridmodel] sealed case class GridCell(x: Int, y: Int, content: Option[T]) extends Cell[T] {
 
     def isEmpty: Boolean = content.isEmpty
 
