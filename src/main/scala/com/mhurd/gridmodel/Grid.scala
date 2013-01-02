@@ -1,17 +1,58 @@
 package com.mhurd.gridmodel
 
-import collection.mutable
 import collection.mutable.ListBuffer
+
+sealed trait Cell[T] {
+
+  def x: Int
+
+  def y: Int
+
+  def content: Option[T]
+
+  def isEmpty: Boolean
+
+  def isOutOfBounds: Boolean
+
+  def surroundingCells: List[Cell[T]]
+
+  def north: Cell[T]
+
+  def northEast: Cell[T]
+
+  def east: Cell[T]
+
+  def southEast: Cell[T]
+
+  def south: Cell[T]
+
+  def southWest: Cell[T]
+
+  def west: Cell[T]
+
+  def northWest: Cell[T]
+
+}
 
 sealed case class Grid[T](width: Int, height: Int) {
 
-  private val grid: mutable.Map[(Int, Int), GridCell] = mutable.Map()
+  implicit object CellOrdering extends Ordering[Cell[T]] {
+    def compare(a: Cell[T], b: Cell[T]) = {
+      val xComp = a.x compare b.x
+      if (xComp == 0) a.y compare b.y
+      else xComp
+    }
+  }
+
+  private var cellGrid: Map[(Int, Int), Cell[T]] = Map()
+
+  def cellMap(): Map[(Int, Int), Cell[T]] = cellGrid
 
   override def equals(obj: Any) = obj match {
     case that: Grid[T] => {
-      (this eq that) || canEqual(that) && this.grid.size == that.grid.size && this.width == that.width && this.height == that.height &&
-        this.grid.keySet.forall(key => {
-          that.grid.contains(key) && this.grid.get(key) == that.grid.get(key)
+      (this eq that) || canEqual(that) && this.cellGrid.size == that.cellGrid.size && this.width == that.width && this.height == that.height &&
+        this.cellGrid.keySet.forall(key => {
+          that.cellGrid.contains(key) && this.cellGrid.get(key) == that.cellGrid.get(key)
         })
     }
     case _ => false
@@ -20,7 +61,7 @@ sealed case class Grid[T](width: Int, height: Int) {
   override def canEqual(that: Any): Boolean = that.isInstanceOf[Grid[T]]
 
   override def hashCode(): Int = {
-    if (grid.values.isEmpty) {
+    if (cellGrid.values.isEmpty) {
       41 * (
         41 + width.hashCode()
         ) + height.hashCode()
@@ -28,33 +69,40 @@ sealed case class Grid[T](width: Int, height: Int) {
     else {
       41 * (
         41 * (
-          (grid.values map (value => 41 + value.hashCode())).reduceLeft((sum, value) => (41 * sum) + value)
+          (cellGrid.values map (value => 41 + value.hashCode())).reduceLeft((sum, value) => (41 * sum) + value)
           ) + width.hashCode()
         ) + height.hashCode()
     }
   }
 
-  def get(x: Int, y: Int): GridCell = {
-    grid.get((x, y)) match {
+  def get(x: Int, y: Int): Cell[T] = {
+    cellGrid.get((x, y)) match {
       case Some(cell: GridCell) => cell
       case None => GridCell(x, y, None)
     }
   }
 
-  def getGrid: Map[(Int, Int), GridCell] = grid.toMap
+  def cellList: List[Cell[T]] = {
+    (for {
+      y <- ((0 until height) reverse)
+      x <- 0 until width
+    } yield {
+      get(x, y)
+    }).toList.sorted
+  }
 
-  def put(x: Int, y: Int, content: T): GridCell = {
+  def put(x: Int, y: Int, content: T): Cell[T] = {
     val newCell = GridCell(x, y, Option(content))
-    if (!newCell.isOutOfBounds) grid += ((newCell.x, newCell.y) -> newCell)
+    if (!newCell.isOutOfBounds) cellGrid += ((newCell.x, newCell.y) -> newCell)
     newCell
   }
 
   def remove(x: Int, y: Int) = {
-    grid.remove((x, y))
+    cellGrid = cellGrid - ((x, y))
   }
 
   override def toString: String = {
-    grid map {
+    cellGrid map {
       case (key, value) => value
     } mkString ("\n")
   }
@@ -67,38 +115,38 @@ sealed case class Grid[T](width: Int, height: Int) {
       val nl =
         if (x == (width - 1)) System.lineSeparator()
         else ""
-      if (grid.get(x, y).isEmpty) "o " + nl
+      if (cellGrid.get(x, y).isEmpty) "o " + nl
       else "* " + nl
-    }) mkString("")
+    }) mkString ("")
   }
 
-  sealed case class GridCell(x: Int, y: Int, content: Option[T]) {
+  private sealed case class GridCell(x: Int, y: Int, content: Option[T]) extends Cell[T] {
 
     def isEmpty: Boolean = content.isEmpty
 
     def isOutOfBounds: Boolean = (x + 1) > width || (y + 1) > height || x < 0 || y < 0
 
-    def surroundingCells: List[GridCell] = {
-      val b = ListBuffer[GridCell]()
+    def surroundingCells: List[Cell[T]] = {
+      val b = ListBuffer[Cell[T]]()
       north +=: northEast +=: east +=: southEast +=: south +=: southWest +=: west +=: northWest +=: b
-      b.toList filter (!_.isOutOfBounds)
+      (b.toList filter (!_.isOutOfBounds)).sorted
     }
 
-    def north: GridCell = get(x, y + 1)
+    def north: Cell[T] = get(x, y + 1)
 
-    def northEast: GridCell = get(x + 1, y + 1)
+    def northEast: Cell[T] = get(x + 1, y + 1)
 
-    def east: GridCell = get(x + 1, y)
+    def east: Cell[T] = get(x + 1, y)
 
-    def southEast: GridCell = get(x + 1, y - 1)
+    def southEast: Cell[T] = get(x + 1, y - 1)
 
-    def south: GridCell = get(x, y - 1)
+    def south: Cell[T] = get(x, y - 1)
 
-    def southWest: GridCell = get(x - 1, y - 1)
+    def southWest: Cell[T] = get(x - 1, y - 1)
 
-    def west: GridCell = get(x - 1, y)
+    def west: Cell[T] = get(x - 1, y)
 
-    def northWest: GridCell = get(x - 1, y + 1)
+    def northWest: Cell[T] = get(x - 1, y + 1)
 
     def contentsString[T]: String = {
       if (isOutOfBounds) "Out-of-bounds"

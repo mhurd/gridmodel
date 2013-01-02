@@ -76,17 +76,25 @@ class GridDataAccessSpec extends FlatSpec {
       }
     }
 
-  it must "be able to get the raw Map (immutable)" in {
+  it must "be able to get the raw Map of non-empty cells (immutable)" in {
     val f = nonEmptyFixture
     expect(5) {
-      val theGrid: Map[(Int, Int), f.grid.GridCell] = f.grid.getGrid
+      val theGrid: Map[(Int, Int), Cell[Int]] = f.grid.cellMap
       theGrid.size
     }
   }
 
+  it must "be able to get the cells as a sorted list, including empty cells (immutable)" in {
+      val f = nonEmptyFixture
+      expect(9) {
+        val theCells: List[Cell[Int]] = f.grid.cellList
+        theCells.size
+      }
+    }
+
   it must "be able to return a string representation of itself" in {
     val f = nonEmptyFixture
-    expect("(1,0) = 3\n(1,2) = 5\n(1,1) = 4\n(0,1) = 2\n(0,0) = 1") {
+    expect("(1,1) = 4\n(1,0) = 3\n(1,2) = 5\n(0,0) = 1\n(0,1) = 2") {
       f.grid.toString
     }
   }
@@ -100,14 +108,14 @@ class GridDataAccessSpec extends FlatSpec {
 
   it must "be able to get the surrounding cells of any cell" in {
     val f = nonEmptyFixture
-    expect("List((1,2) = 5, (2,2) = Empty, (2,1) = Empty, (2,0) = Empty, (1,0) = 3, (0,0) = 1, (0,1) = 2, (0,2) = Empty)") {
+    expect("List((0,0) = 1, (0,1) = 2, (0,2) = Empty, (1,0) = 3, (1,2) = 5, (2,0) = Empty, (2,1) = Empty, (2,2) = Empty)") {
       f.grid.get(1, 1).surroundingCells.toString()
     }
   }
 
   it must "be able to get the surrounding cells of any cell - handling out of bounds cells" in {
     val f = nonEmptyFixture
-    expect("List((0,1) = 2, (1,1) = 4, (1,0) = 3)") {
+    expect("List((0,1) = 2, (1,0) = 3, (1,1) = 4)") {
       f.grid.get(0, 0).surroundingCells.toString()
     }
   }
