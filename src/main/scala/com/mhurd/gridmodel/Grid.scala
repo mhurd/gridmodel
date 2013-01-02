@@ -73,6 +73,15 @@ sealed case class Grid[T](width: Int, height: Int, initialCells: List[(Int, Int,
     }
   }
 
+  def transform(f: (Cell[T]) => Option[T]): Grid[T] = {
+    val transformedCells = for {
+      cell <- cellList
+      newCellContent = f(cell)
+      if (newCellContent.isDefined)
+    } yield (cell.x, cell.y, newCellContent.get)
+    Grid[T](width, height, transformedCells)
+  }
+
   override def toString: String = {
     cellMap map {
       case (key, value) => value

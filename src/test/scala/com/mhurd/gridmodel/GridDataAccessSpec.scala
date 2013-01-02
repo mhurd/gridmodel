@@ -29,6 +29,19 @@ class GridDataAccessSpec extends FlatSpec {
       val grid = Grid[Int](3, 3, cells)
     }
 
+  def conwayFixture =
+    new {
+      val cells = List(
+        (0, 0, 1),
+        (2, 1, 1),
+        (1, 2, 1),
+        (2, 2, 1),
+        (3, 2, 1),
+        (2, 3, 1)
+      )
+      val grid = Grid[Int](4, 4, cells)
+    }
+
   "GridDataAccess" must "be able to be constructed using a list of tuples representing the desired cells (handling out out-of-bounds cells)" in {
     val f = nonEmptyOutOfBoundsFixture
     expect(true) {
@@ -217,6 +230,39 @@ class GridDataAccessSpec extends FlatSpec {
     val f = nonEmptyFixture
     expect("(0,2) = Empty") {
       f.grid.get(1, 1).northWest.toString
+    }
+  }
+
+  it must "be able to transform the grid into a new grid" in {
+    val f = nonEmptyFixture
+    expect("(1,1) = 8\n(1,0) = 6\n(1,2) = 10\n(0,0) = 2\n(0,1) = 4") {
+      f.grid.transform(
+        (cell) => cell.content match {
+          case Some(c) => Some(c * 2)
+          case None => None
+        }
+      ).toString
+    }
+  }
+
+  it must "be able to transform the grid into a new grid using conway's game of life rules" in {
+    val f = conwayFixture
+    expect("(3,3) = 1\n(1,3) = 1\n(1,2) = 1\n(2,3) = 1\n(2,1) = 1\n(3,2) = 1\n(3,1) = 1") {
+      f.grid.transform(
+        (cell) => {
+          val occupiedNeighbors = cell.surroundingCells.filter(c => !c.isEmpty)
+          cell.content match {
+            case Some(c) => {
+              if (occupiedNeighbors.size == 2 || occupiedNeighbors.size == 3) Some(c)
+              else None
+            }
+            case None => {
+              if (occupiedNeighbors.size == 3) Some(1)
+              else None
+            }
+          }
+        }
+      ).toString
     }
   }
 
