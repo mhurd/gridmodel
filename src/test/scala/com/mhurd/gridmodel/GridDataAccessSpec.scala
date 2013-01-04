@@ -122,7 +122,7 @@ class GridDataAccessSpec extends FlatSpec {
 
   it must "be able to return a string representation of itself" in {
     val f = nonEmptyFixture
-    expect("(1,1) = 4\n(1,0) = 3\n(1,2) = 5\n(0,0) = 1\n(0,1) = 2") {
+    expect("(0,0) = 1\n(1,1) = 4\n(0,1) = 2\n(1,2) = 5\n(1,0) = 3") {
       f.grid.toString
     }
   }
@@ -235,7 +235,7 @@ class GridDataAccessSpec extends FlatSpec {
 
   it must "be able to transform the grid into a new grid" in {
     val f = nonEmptyFixture
-    expect("(1,1) = 8\n(1,0) = 6\n(1,2) = 10\n(0,0) = 2\n(0,1) = 4") {
+    expect("(0,0) = 2\n(1,1) = 8\n(0,1) = 4\n(1,2) = 10\n(1,0) = 6") {
       f.grid.transform(
         (cell) => cell.content match {
           case Some(c) => Some(c * 2)
@@ -247,7 +247,7 @@ class GridDataAccessSpec extends FlatSpec {
 
   it must "be able to transform the grid into a new grid using conway's game of life rules" in {
     val f = conwayFixture
-    expect("(3,3) = 1\n(1,3) = 1\n(1,2) = 1\n(2,3) = 1\n(2,1) = 1\n(3,2) = 1\n(3,1) = 1") {
+    expect("(3,1) = 1\n(3,2) = 1\n(1,3) = 1\n(3,3) = 1\n(2,3) = 1\n(1,2) = 1\n(2,1) = 1") {
       f.grid.transform(
         (cell) => {
           val occupiedNeighbors = cell.surroundingCells.filter(c => !c.isEmpty)

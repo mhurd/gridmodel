@@ -160,7 +160,7 @@ sealed case class Grid[T](width: Int, height: Int, initialCells: List[(Int, Int,
       if (isOutOfBounds) "Out-of-bounds"
       else
         content match {
-          case Some(c: T) => c.toString
+          case Some(c) => c.toString
           case None => "Empty"
         }
     }
