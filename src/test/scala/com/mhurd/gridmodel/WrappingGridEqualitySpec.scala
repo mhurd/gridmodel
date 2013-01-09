@@ -14,9 +14,9 @@ class WrappingGridEqualitySpec extends FlatSpec {
   def sameContentsWrappingGridFixture =
     new {
       val cells = List(
-        (1, 1, 1),
-        (1, 1, 1),
-        (1, 1, 1)
+        ((1, 1), 1),
+        ((1, 1), 1),
+        ((1, 1), 1)
       )
       val grid1 = WrappingGrid[Int](3, 3, cells)
       val grid2 = WrappingGrid[Int](3, 3, cells)
@@ -26,14 +26,14 @@ class WrappingGridEqualitySpec extends FlatSpec {
   def differentContentsWrappingGridFixture =
     new {
       val cells1 = List(
-        (1, 1, 1),
-        (1, 1, 1),
-        (1, 1, 1)
+        ((1, 1), 1),
+        ((1, 1), 1),
+        ((1, 1), 1)
       )
       val cells2 = List(
-        (1, 1, 1),
-        (1, 1, 2),
-        (1, 1, 3)
+        ((1, 1), 1),
+        ((1, 1), 2),
+        ((1, 1), 3)
       )
       val grid1 = WrappingGrid[Int](3, 3, cells1)
       val grid2 = WrappingGrid[Int](3, 3, cells2)
@@ -43,14 +43,14 @@ class WrappingGridEqualitySpec extends FlatSpec {
   def differentLocationsWrappingGridFixture =
     new {
       val cells1 = List(
-        (1, 1, 1),
-        (1, 1, 1),
-        (1, 1, 1)
+        ((1, 1), 1),
+        ((1, 1), 1),
+        ((1, 1), 1)
       )
       val cells2 = List(
-        (1, 1, 1),
-        (1, 2, 1),
-        (2, 1, 1)
+        ((1, 1), 1),
+        ((1, 2), 1),
+        ((2, 1), 1)
       )
       val grid1 = WrappingGrid[Int](3, 3, cells1)
       val grid2 = WrappingGrid[Int](3, 3, cells2)

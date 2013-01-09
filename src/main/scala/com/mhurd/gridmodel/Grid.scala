@@ -1,60 +1,75 @@
 package com.mhurd.gridmodel
 
 import collection.mutable.ListBuffer
+import scala.Some
 
-sealed trait Cell[T] {
+sealed case class Cell[T](coord: Coord, contents: Option[T]) {
 
-  def x: Int
+  def x: Int = coord._1
 
-  def y: Int
+  def y: Int = coord._2
 
-  def content: Option[T]
-
-  def isEmpty: Boolean
-
-  def isOutOfBounds: Boolean
-
-  def surroundingCells: List[Cell[T]]
-
-  def north: Cell[T]
-
-  def northEast: Cell[T]
-
-  def east: Cell[T]
-
-  def southEast: Cell[T]
-
-  def south: Cell[T]
-
-  def southWest: Cell[T]
-
-  def west: Cell[T]
-
-  def northWest: Cell[T]
+  override def toString: String = {
+    val base = "(" + x + "," + y + ") = "
+    if (contents.isEmpty) base + "Empty"
+    else base + contents.get
+  }
 
 }
 
+/**
+ * Represents the grid itself
+ * @tparam T the type of objects the grid cells contain
+ */
 sealed trait Grid[T] {
 
   def width: Int
 
   def height: Int
 
-  def cellMap: Map[(Int, Int), Cell[T]]
+  def cellMap: Map[Coord, Cell[T]]
 
   def cellList: List[Cell[T]]
 
-  def get(x: Int, y: Int): Cell[T]
+  def get(coord: Coord): Cell[T]
 
   def transform(f: (Cell[T]) => Option[T]): Grid[T]
 
   def ascii: String
 
-  def add(cell: (Int, Int, T)): Grid[T]
+  def add(cell: (Coord, T)): Grid[T]
+
+  def isOutOfBounds(coord: Coord): Boolean
+
+  def surroundingCellsOf(coord: Coord): List[Cell[T]]
+
+  def northOf(coord: Coord): Cell[T]
+
+  def northEastOf(coord: Coord): Cell[T]
+
+  def eastOf(coord: Coord): Cell[T]
+
+  def southEastOf(coord: Coord): Cell[T]
+
+  def southOf(coord: Coord): Cell[T]
+
+  def southWestOf(coord: Coord): Cell[T]
+
+  def westOf(coord: Coord): Cell[T]
+
+  def northWestOf(coord: Coord): Cell[T]
 
 }
 
-sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: List[(Int, Int, T)]) extends Grid[T] {
+/**
+ * The abstract grid implementation.
+ *
+ * @param width of the grid (in cells)
+ * @param height of the grid (in cells)
+ * @param initialCells the initial grid contents
+ * @tparam T the type of objects the grid cells contain
+ */
+sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: List[(Coord, T)]) extends Grid[T] {
 
   implicit object CellOrdering extends Ordering[Cell[T]] {
     def compare(a: Cell[T], b: Cell[T]) = {
@@ -64,14 +79,34 @@ sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: Lis
     }
   }
 
+  def isOutOfBounds(coord: Coord): Boolean = {
+    coord match {
+      case (x, y) => x >= width || y >= height || x < 0 || y < 0
+      case _ => throw new IllegalArgumentException(coord + " is not a coordinate (Int, Int)!")
+    }
+  }
+
+  def surroundingCellsOf(coord: Coord): List[Cell[T]] = {
+    val b = ListBuffer[Cell[T]]()
+    northOf(coord) +=:
+      northEastOf(coord) +=:
+      eastOf(coord) +=:
+      southEastOf(coord) +=:
+      southOf(coord) +=:
+      southWestOf(coord) +=:
+      westOf(coord) +=:
+      northWestOf(coord) +=:
+      b
+    (b.toList filter (cell => !isOutOfBounds(cell.coord))).sorted
+  }
+
   /*
    Holds the map of non-empty cells
    */
-  val cellMap: Map[(Int, Int), Cell[T]] = (for {
-    (x, y, content) <- initialCells
-    newCell: Cell[T] = createCell(x, y, Some(content))
-    if (!newCell.isOutOfBounds)
-  } yield (x, y) -> newCell).toMap
+  val cellMap: Map[Coord, Cell[T]] = (for {
+    (coord, contents) <- initialCells
+    if (!isOutOfBounds(coord))
+  } yield (coord -> Cell(coord, Option(contents)))).toMap
 
   /*
    Gets an ordered list of all the cells that make up the grid, including empty cells
@@ -86,27 +121,25 @@ sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: Lis
     }).toList.sorted
   }
 
-  def get(x: Int, y: Int): Cell[T] = {
-    cellMap.get((x, y)) match {
+  def get(coord: Coord): Cell[T] = {
+    cellMap.get(coord) match {
       case Some(cell: Cell[T]) => cell
-      case None => createCell(x, y, None)
+      case None => new Cell[T](coord, Option.empty) {}
     }
   }
 
-  def add(cell: (Int, Int, T)): Grid[T] = {
-    createGrid(width, height, cell :: initialCells)
+  def add(newCell: (Coord, T)): Grid[T] = {
+    createGrid(width, height, newCell :: initialCells)
   }
 
-  private[gridmodel] def createGrid(width: Int, height: Int, initialCells: List[(Int, Int, T)]): Grid[T]
-
-  private[gridmodel] def createCell(x: Int, y: Int, content: Option[T]): Cell[T]
+  private[gridmodel] def createGrid(width: Int, height: Int, initialCells: List[(Coord, T)]): Grid[T]
 
   def transform(f: (Cell[T]) => Option[T]): Grid[T] = {
     val transformedCells = for {
       cell <- cellList
       newCellContent = f(cell)
       if (newCellContent.isDefined)
-    } yield (cell.x, cell.y, newCellContent.get)
+    } yield (cell.coord, newCellContent.get)
     createGrid(width, height, transformedCells)
   }
 
@@ -116,7 +149,7 @@ sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: Lis
     } mkString ("\n")
   }
 
-  def ascii(): String = {
+  def ascii: String = {
     (for {
       y <- ((0 until height) reverse)
       x <- 0 until width
@@ -155,139 +188,128 @@ sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: Lis
         ) + height.hashCode()
     }
   }
-
-  private[gridmodel] sealed abstract class AbstractGridCell(x: Int, y: Int, content: Option[T]) extends Cell[T] {
-
-    def isEmpty: Boolean = content.isEmpty
-
-    def isOutOfBounds: Boolean = (x + 1) > width || (y + 1) > height || x < 0 || y < 0
-
-    def surroundingCells: List[Cell[T]] = {
-      val b = ListBuffer[Cell[T]]()
-      north +=: northEast +=: east +=: southEast +=: south +=: southWest +=: west +=: northWest +=: b
-      (b.toList filter (!_.isOutOfBounds)).sorted
-    }
-
-    def contentsString[T]: String = {
-      if (isOutOfBounds) "Out-of-bounds"
-      else
-        content match {
-          case Some(c) => c.toString
-          case None => "Empty"
-        }
-    }
-
-    override def toString: String = {
-      formatXY(x, y) + " = " + contentsString[T]
-    }
-
-    def canEqual(that: Any): Boolean
-
-    override def equals(obj: Any) = obj match {
-      case that: AbstractGrid[T]#AbstractGridCell => {
-        (this eq that) || (canEqual(that) && this.x == that.x && this.y == that.y && this.content == that.content)
-      }
-      case _ => false
-    }
-
-    override def hashCode(): Int = {
-      41 * (
-        41 * (
-          41 + x.hashCode()
-          ) + y.hashCode()
-        ) + content.hashCode()
-    }
-
-  }
-
-  private[gridmodel] sealed case class StandardGridCell(x: Int, y: Int, content: Option[T]) extends AbstractGridCell(x, y, content) {
-
-    def north: Cell[T] = get(x, y + 1)
-
-    def northEast: Cell[T] = get(x + 1, y + 1)
-
-    def east: Cell[T] = get(x + 1, y)
-
-    def southEast: Cell[T] = get(x + 1, y - 1)
-
-    def south: Cell[T] = get(x, y - 1)
-
-    def southWest: Cell[T] = get(x - 1, y - 1)
-
-    def west: Cell[T] = get(x - 1, y)
-
-    def northWest: Cell[T] = get(x - 1, y + 1)
-
-    override def canEqual(that: Any): Boolean = that.isInstanceOf[StandardGridCell]
-
-  }
-
-  private[gridmodel] sealed case class WrappingGridCell(x: Int, y: Int, content: Option[T]) extends AbstractGridCell(x, y, content) {
-
-    override def north: Cell[T] = if (y + 1 == height) get(x, 0) else get(x, y + 1)
-
-    override def northEast: Cell[T] = {
-      val newX = if (x + 1 == width) 0 else x + 1
-      val newY = if (y + 1 == height) 0 else y + 1
-      get(newX, newY)
-    }
-
-    override def east: Cell[T] = if (x + 1 == width) get(0, y) else get(x + 1, y)
-
-    override def southEast: Cell[T] = {
-      val newX = if (x + 1 == width) 0 else x + 1
-      val newY = if (y - 1 < 0) height - 1 else y - 1
-      get(newX, newY)
-    }
-
-    override def south: Cell[T] = if (y - 1 < 0) get(x, height) else get(x, y - 1)
-
-    override def southWest: Cell[T] = {
-      val newX = if (x - 1 < 0) width - 1 else x - 1
-      val newY = if (y - 1 < 0) height - 1 else y - 1
-      get(newX, newY)
-    }
-
-    override def west: Cell[T] = if (x - 1 < 0) get(width, y) else get(x - 1, y)
-
-    override def northWest: Cell[T] = {
-      val newX = if (x - 1 < 0) width - 1  else x - 1
-      val newY = if (y + 1 == height) 0 else y + 1
-      get(newX, newY)
-    }
-
-    override def canEqual(that: Any): Boolean = that.isInstanceOf[WrappingGridCell]
-
-  }
-
 }
 
-sealed case class StandardGrid[T](width: Int, height: Int, initialCells: List[(Int, Int, T)]) extends AbstractGrid[T](width, height, initialCells) {
+/**
+ * A standard grid.
+ *
+ * @param width of the grid (in cells)
+ * @param height of the grid (in cells)
+ * @param initialCells the initial grid contents
+ */
+sealed case class StandardGrid[T](width: Int, height: Int, initialCells: List[(Coord, T)]) extends AbstractGrid[T](width, height, initialCells) {
 
-  private[gridmodel] def createGrid(width: Int, height: Int, initialCells: List[(Int, Int, T)]): Grid[T] = {
+  private[gridmodel] def createGrid(width: Int, height: Int, initialCells: List[(Coord, T)]): Grid[T] = {
     StandardGrid(width, height, initialCells)
   }
 
-  private[gridmodel] def createCell(x: Int, y: Int, content: Option[T]): Cell[T] = {
-    StandardGridCell(x, y, content)
+  def northOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    get(x, y + 1)
+  }
+
+  def northEastOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    get(x + 1, y + 1)
+  }
+
+  def eastOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    get(x + 1, y)
+  }
+
+  def southEastOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    get(x + 1, y - 1)
+  }
+
+  def southOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    get(x, y - 1)
+  }
+
+  def southWestOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    get(x - 1, y - 1)
+  }
+
+  def westOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    get(x - 1, y)
+  }
+
+  def northWestOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    get(x - 1, y + 1)
   }
 
   override def canEqual(that: Any): Boolean = that.isInstanceOf[StandardGrid[T]]
 
 }
 
-sealed case class WrappingGrid[T](width: Int, height: Int, initialCells: List[(Int, Int, T)]) extends AbstractGrid[T](width, height, initialCells) {
+/**
+ * A wrapping grid implementation that wraps at its boundaries.
+ *
+ * @param width of the grid (in cells)
+ * @param height of the grid (in cells)
+ * @param initialCells the initial grid contents
+ */
+sealed case class WrappingGrid[T](width: Int, height: Int, initialCells: List[(Coord, T)]) extends AbstractGrid[T](width, height, initialCells) {
 
-  private[gridmodel] def createGrid(width: Int, height: Int, initialCells: List[(Int, Int, T)]): Grid[T] = {
+  private[gridmodel] def createGrid(width: Int, height: Int, initialCells: List[(Coord, T)]): Grid[T] = {
     WrappingGrid(width, height, initialCells)
   }
 
-  private[gridmodel] def createCell(x: Int, y: Int, content: Option[T]): Cell[T] = {
-    WrappingGridCell(x, y, content)
+  override def northOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    if (y + 1 == height) get(x, 0) else get(x, y + 1)
   }
 
-  override def canEqual(that: Any): Boolean = that.isInstanceOf[WrappingGrid[T]]
+  override def northEastOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    val newX = if (x + 1 == width) 0 else x + 1
+    val newY = if (y + 1 == height) 0 else y + 1
+    get(newX, newY)
+  }
+
+  override def eastOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    if (y + 1 == height) get(0, y) else get(x + 1, y)
+  }
+
+  override def southEastOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    val newX = if (x + 1 == width) 0 else x + 1
+    val newY = if (y - 1 < 0) height - 1 else y - 1
+    get(newX, newY)
+  }
+
+  override def southOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    if (y - 1 < 0) get(x, height) else get(x, y - 1)
+  }
+
+  override def southWestOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    val newX = if (x - 1 < 0) width - 1 else x - 1
+    val newY = if (y - 1 < 0) height - 1 else y - 1
+    get(newX, newY)
+  }
+
+  override def westOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    if (x - 1 < 0) get(width, y) else get(x - 1, y)
+  }
+
+  override def northWestOf(coord: Coord): Cell[T] = {
+    val (x, y) = coord
+    val newX = if (x - 1 < 0) width - 1 else x - 1
+    val newY = if (y + 1 == height) 0 else y + 1
+    get(newX, newY)
+  }
+
+  override def canEqual(that: Any): Boolean = {
+    that.isInstanceOf[WrappingGrid[T]]
+  }
 
 }
-
-

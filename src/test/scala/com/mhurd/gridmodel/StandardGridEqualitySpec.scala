@@ -14,9 +14,9 @@ class StandardGridEqualitySpec extends FlatSpec {
   def sameContentsStandardGridFixture =
     new {
       val cells = List(
-        (1, 1, 1),
-        (1, 1, 1),
-        (1, 1, 1)
+        ((1, 1), 1),
+        ((1, 1), 1),
+        ((1, 1), 1)
       )
       val grid1 = StandardGrid[Int](3, 3, cells)
       val grid2 = StandardGrid[Int](3, 3, cells)
@@ -26,14 +26,14 @@ class StandardGridEqualitySpec extends FlatSpec {
   def differentContentsStandardGridFixture =
     new {
       val cells1 = List(
-        (1, 1, 1),
-        (1, 1, 1),
-        (1, 1, 1)
+        ((1, 1), 1),
+        ((1, 1), 1),
+        ((1, 1), 1)
       )
       val cells2 = List(
-        (1, 1, 1),
-        (1, 1, 2),
-        (1, 1, 3)
+        ((1, 1), 1),
+        ((1, 1), 2),
+        ((1, 1), 3)
       )
       val grid1 = StandardGrid[Int](3, 3, cells1)
       val grid2 = StandardGrid[Int](3, 3, cells2)
@@ -43,14 +43,14 @@ class StandardGridEqualitySpec extends FlatSpec {
   def differentLocationsStandardGridFixture =
     new {
       val cells1 = List(
-        (1, 1, 1),
-        (1, 1, 1),
-        (1, 1, 1)
+        ((1, 1), 1),
+        ((1, 1), 1),
+        ((1, 1), 1)
       )
       val cells2 = List(
-        (1, 1, 1),
-        (1, 2, 1),
-        (2, 1, 1)
+        ((1, 1), 1),
+        ((1, 2), 1),
+        ((2, 1), 1)
       )
       val grid1 = StandardGrid[Int](3, 3, cells1)
       val grid2 = StandardGrid[Int](3, 3, cells2)
