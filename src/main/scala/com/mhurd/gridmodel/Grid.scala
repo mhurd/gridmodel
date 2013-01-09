@@ -3,7 +3,7 @@ package com.mhurd.gridmodel
 import collection.mutable.ListBuffer
 import scala.Some
 
-sealed case class Cell[T](coord: Coord, contents: Option[T]) {
+sealed case class Cell[+T](coord: Coord, contents: Option[T]) {
 
   def x: Int = coord._1
 
@@ -15,13 +15,30 @@ sealed case class Cell[T](coord: Coord, contents: Option[T]) {
     else base + contents.get
   }
 
+  override def equals(obj: Any) = obj match {
+    case that: Cell[T] => {
+      (this eq that) || (canEqual(that) && this.x == that.x && this.y == that.y && this.contents == that.contents)
+    }
+    case _ => false
+  }
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[Cell[T]]
+
+  override def hashCode(): Int = {
+    41 * (
+      41 * (
+        41 + x.hashCode()
+        ) + y.hashCode()
+      ) + contents.hashCode()
+  }
+
 }
 
 /**
  * Represents the grid itself
  * @tparam T the type of objects the grid cells contain
  */
-sealed trait Grid[T] {
+sealed trait Grid[+T] {
 
   def width: Int
 
@@ -33,11 +50,11 @@ sealed trait Grid[T] {
 
   def get(coord: Coord): Cell[T]
 
-  def transform(f: (Cell[T]) => Option[T]): Grid[T]
+  def transform[U >: T](f: (Cell[U]) => Option[U]): Grid[U]
 
   def ascii: String
 
-  def add(cell: (Coord, T)): Grid[T]
+  def add[U >: T](cell: (Coord, U)): Grid[U]
 
   def isOutOfBounds(coord: Coord): Boolean
 
@@ -128,13 +145,13 @@ sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: Lis
     }
   }
 
-  def add(newCell: (Coord, T)): Grid[T] = {
-    createGrid(width, height, newCell :: initialCells)
+  def add[U >: T](cell: (Coord, U)): Grid[U] = {
+    createGrid(width, height, cell :: (initialCells.filterNot(initialCell => initialCell._1 == cell._1)))
   }
 
-  private[gridmodel] def createGrid(width: Int, height: Int, initialCells: List[(Coord, T)]): Grid[T]
+  private[gridmodel] def createGrid[U >: T](width: Int, height: Int, initialCells: List[(Coord, U)]): Grid[U]
 
-  def transform(f: (Cell[T]) => Option[T]): Grid[T] = {
+  def transform[U >: T](f: (Cell[U]) => Option[U]): Grid[U] = {
     val transformedCells = for {
       cell <- cellList
       newCellContent = f(cell)
@@ -199,7 +216,7 @@ sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: Lis
  */
 sealed case class StandardGrid[T](width: Int, height: Int, initialCells: List[(Coord, T)]) extends AbstractGrid[T](width, height, initialCells) {
 
-  private[gridmodel] def createGrid(width: Int, height: Int, initialCells: List[(Coord, T)]): Grid[T] = {
+  private[gridmodel] def createGrid[U >: T](width: Int, height: Int, initialCells: List[(Coord, U)]): Grid[U] = {
     StandardGrid(width, height, initialCells)
   }
 
@@ -256,7 +273,7 @@ sealed case class StandardGrid[T](width: Int, height: Int, initialCells: List[(C
  */
 sealed case class WrappingGrid[T](width: Int, height: Int, initialCells: List[(Coord, T)]) extends AbstractGrid[T](width, height, initialCells) {
 
-  private[gridmodel] def createGrid(width: Int, height: Int, initialCells: List[(Coord, T)]): Grid[T] = {
+  private[gridmodel] def createGrid[U >: T](width: Int, height: Int, initialCells: List[(Coord, U)]): Grid[U] = {
     WrappingGrid(width, height, initialCells)
   }
 
