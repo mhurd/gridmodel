@@ -153,17 +153,17 @@ sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: Lis
 
   def transform[U >: T](f: (Cell[U]) => Option[U]): Grid[U] = {
     val transformedCells = for {
-      cell <- cellList
+      cell <- cellList.par
       newCellContent = f(cell)
       if (newCellContent.isDefined)
     } yield (cell.coord, newCellContent.get)
-    createGrid(width, height, transformedCells)
+    createGrid(width, height, transformedCells.toList)
   }
 
   override def toString: String = {
     cellMap map {
       case (key, value) => value
-    } mkString ("\n")
+    } mkString (System.lineSeparator())
   }
 
   def ascii: String = {
@@ -174,9 +174,11 @@ sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: Lis
       val nl =
         if (x == (width - 1)) System.lineSeparator()
         else ""
-      if (cellMap.get(x, y).isEmpty) "o " + nl
-      else "x " + nl
-    }) mkString ("")
+      cellMap.get(x, y) match {
+        case Some(cell) => if (cell.contents.isEmpty) "o " + nl else "x " + nl
+        case _ => "o " + nl
+      }
+    }).mkString ("")
   }
 
   def canEqual(that: Any): Boolean

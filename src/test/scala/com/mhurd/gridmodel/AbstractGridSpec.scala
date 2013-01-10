@@ -4,6 +4,8 @@ import org.scalatest.FlatSpec
 
 class AbstractGridSpec extends FlatSpec {
 
+  def nl = System.lineSeparator()
+
   def nonEmptyFixture =
     new {
       val cells = List(
@@ -122,14 +124,20 @@ class AbstractGridSpec extends FlatSpec {
 
   it must "be able to return a string representation of itself" in {
     val f = nonEmptyFixture
-    expect("(0,0) = 1\n(1,1) = 4\n(0,1) = 2\n(1,2) = 5\n(1,0) = 3") {
+    expect("(0,0) = 1" + nl +
+           "(1,1) = 4" + nl +
+           "(0,1) = 2" + nl +
+           "(1,2) = 5" + nl +
+           "(1,0) = 3") {
       f.grid.toString
     }
   }
 
   it must "be able to return an ascii art representation of itself" in {
     val f = nonEmptyFixture
-    expect("o x o \nx x o \nx x o \n") {
+    expect("o x o " + nl +
+           "x x o " + nl +
+           "x x o " + nl) {
       f.grid.ascii
     }
   }
@@ -162,14 +170,23 @@ class AbstractGridSpec extends FlatSpec {
 
   it must "be able to add a new cell returning a new grid containing the old cells plus the new one" in {
     val f = nonEmptyFixture
-    expect("(0,2) = 1\n(0,0) = 1\n(1,1) = 4\n(0,1) = 2\n(1,2) = 5\n(1,0) = 3") {
+    expect("(0,2) = 1" + nl +
+      "(0,0) = 1" + nl +
+      "(1,1) = 4" + nl +
+      "(0,1) = 2" + nl +
+      "(1,2) = 5" + nl +
+      "(1,0) = 3") {
       f.grid.add(((0, 2), 1)).toString
     }
   }
 
   it must "be able to transform the grid into a new grid" in {
     val f = nonEmptyFixture
-    expect("(0,0) = 2\n(1,1) = 8\n(0,1) = 4\n(1,2) = 10\n(1,0) = 6") {
+    expect("(0,0) = 2" + nl +
+      "(1,1) = 8" + nl +
+      "(0,1) = 4" + nl +
+      "(1,2) = 10" + nl +
+      "(1,0) = 6") {
       f.grid.transform(
         (cell) => cell.contents match {
           case Some(c) => Some(c * 2)
@@ -181,7 +198,13 @@ class AbstractGridSpec extends FlatSpec {
 
   it must "be able to transform the grid into a new grid using conway's game of life rules" in {
     val f = conwayFixture
-    expect("(3,1) = 1\n(3,2) = 1\n(1,3) = 1\n(3,3) = 1\n(2,3) = 1\n(1,2) = 1\n(2,1) = 1") {
+    expect("(3,1) = 1" + nl +
+      "(3,2) = 1" + nl +
+      "(1,3) = 1" + nl +
+      "(3,3) = 1" + nl +
+      "(2,3) = 1" + nl +
+      "(1,2) = 1" + nl +
+      "(2,1) = 1") {
       f.grid.transform(
         (cell) => {
           val occupiedNeighbors = f.grid.surroundingCellsOf(cell.coord).filter(c => !c.contents.isEmpty)
