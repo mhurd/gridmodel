@@ -1,6 +1,7 @@
 package com.mhurd.gridmodel
 
 import org.scalatest.FlatSpec
+import scala.language.reflectiveCalls
 
 class WrappingGridSpec extends FlatSpec {
 

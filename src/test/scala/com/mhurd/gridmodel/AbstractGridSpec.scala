@@ -1,6 +1,7 @@
 package com.mhurd.gridmodel
 
 import org.scalatest.FlatSpec
+import scala.language.reflectiveCalls
 
 class AbstractGridSpec extends FlatSpec {
 
@@ -193,6 +194,26 @@ class AbstractGridSpec extends FlatSpec {
           case None => None
         }
       ).toString
+    }
+  }
+
+  it must "be able to handle a slow function grid transform" in {
+    val items = (for {
+      x <- 0 until 20
+      y <- 0 until 20
+      cell = ((x, y), 1)
+    } yield cell).toList
+
+    val grid = WrappingGrid(20, 20, items)
+
+    val start = System.currentTimeMillis()
+    grid.transform(cell => {
+      Thread.sleep(1)
+      cell.contents
+    })
+    val stop = System.currentTimeMillis();
+    expect(true) {
+      (stop-start) < 500
     }
   }
 

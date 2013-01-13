@@ -2,6 +2,7 @@ package com.mhurd.gridmodel
 
 import collection.mutable.ListBuffer
 import scala.Some
+import language.postfixOps
 
 sealed case class Cell[+T](coord: Coord, contents: Option[T]) {
 
@@ -129,7 +130,7 @@ sealed abstract class AbstractGrid[T](width: Int, height: Int, initialCells: Lis
    Gets an ordered list of all the cells that make up the grid, including empty cells
    which are constructed on the fly
    */
-  def cellList: List[Cell[T]] = {
+  val cellList: List[Cell[T]] = {
     (for {
       y <- ((0 until height) reverse)
       x <- 0 until width
